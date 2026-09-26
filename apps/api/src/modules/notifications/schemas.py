@@ -15,3 +15,7 @@ class NotificationResponse(BaseModel):
     read: bool
     created_at: datetime
     updated_at: datetime
+
+
+class ReadAllResponse(BaseModel):
+    marked_read: int
