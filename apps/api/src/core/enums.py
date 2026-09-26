@@ -69,3 +69,12 @@ CASE_STATUS_TRANSITIONS: dict[CaseStatus, list[CaseStatus]] = {
     CaseStatus.resolved: [CaseStatus.closed],
     CaseStatus.closed: [],
 }
+
+
+class NotificationType(str, enum.Enum):
+    report_update = "report_update"
+    status_change = "status_change"
+    mention = "mention"
+    case_assigned = "case_assigned"
+    moderation_action = "moderation_action"
+
