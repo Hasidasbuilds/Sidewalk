@@ -47,3 +47,57 @@ async def test_list_reports(client: AsyncClient):
     res = await client.get("/api/reports")
     assert res.status_code == 200
     assert isinstance(res.json(), list)
+
+
+async def test_get_report_by_id(client: AsyncClient):
+    token, _ = await register_and_login(client, "rep_by_id@example.com")
+    payload = {
+        "title": "Water Main Leak",
+        "description": "Flooding the street corner",
+        "category": "utility"
+    }
+    create_res = await client.post("/api/reports", json=payload, headers={"Authorization": f"Bearer {token}"})
+    rep_id = create_res.json()["id"]
+
+    get_res = await client.get(f"/api/reports/{rep_id}")
+    assert get_res.status_code == 200
+    assert get_res.json()["title"] == "Water Main Leak"
+
+
+async def test_get_report_not_found(client: AsyncClient):
+    import uuid
+    res = await client.get(f"/api/reports/{uuid.uuid4()}")
+    assert res.status_code == 404
+
+
+async def test_update_report(client: AsyncClient):
+    token, _ = await register_and_login(client, "rep_update@example.com")
+    create_res = await client.post("/api/reports", json={"title": "Old Title", "description": "Desc", "category": "road"}, headers={"Authorization": f"Bearer {token}"})
+    rep_id = create_res.json()["id"]
+
+    patch_res = await client.patch(f"/api/reports/{rep_id}", json={"title": "New Title"}, headers={"Authorization": f"Bearer {token}"})
+    assert patch_res.status_code == 200
+    assert patch_res.json()["title"] == "New Title"
+
+
+async def test_delete_report(client: AsyncClient):
+    token, _ = await register_and_login(client, "rep_delete@example.com")
+    create_res = await client.post("/api/reports", json={"title": "To Delete", "description": "Desc", "category": "waste"}, headers={"Authorization": f"Bearer {token}"})
+    rep_id = create_res.json()["id"]
+
+    del_res = await client.delete(f"/api/reports/{rep_id}", headers={"Authorization": f"Bearer {token}"})
+    assert del_res.status_code == 204
+
+    get_res = await client.get(f"/api/reports/{rep_id}")
+    assert get_res.status_code == 404
+
+
+async def test_location_bounds_validation(client: AsyncClient):
+    token, _ = await register_and_login(client, "loc_val@example.com")
+    # Invalid latitude > 90
+    res = await client.post("/api/reports", json={"title": "Invalid Loc", "description": "Desc", "category": "road", "latitude": 95.0, "longitude": 10.0}, headers={"Authorization": f"Bearer {token}"})
+    assert res.status_code == 422
+
+    # Invalid longitude > 180
+    res = await client.post("/api/reports", json={"title": "Invalid Loc", "description": "Desc", "category": "road", "latitude": 10.0, "longitude": 190.0}, headers={"Authorization": f"Bearer {token}"})
+    assert res.status_code == 422

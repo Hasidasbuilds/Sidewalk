@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from src.core.enums import ReportCategory, ReportStatus
 
 
@@ -8,10 +8,16 @@ class CreateReportRequest(BaseModel):
     title: str = Field(min_length=3, max_length=255)
     description: str = Field(min_length=1)
     category: ReportCategory
-    latitude: float | None = None
-    longitude: float | None = None
+    latitude: float | None = Field(default=None, ge=-90.0, le=90.0)
+    longitude: float | None = Field(default=None, ge=-180.0, le=180.0)
     address: str | None = Field(default=None, max_length=500)
     media_urls: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_location(self) -> "CreateReportRequest":
+        if (self.latitude is not None and self.longitude is None) or (self.latitude is None and self.longitude is not None):
+            raise ValueError("Both latitude and longitude must be provided together, or neither")
+        return self
 
 
 class UpdateReportRequest(BaseModel):
@@ -19,10 +25,16 @@ class UpdateReportRequest(BaseModel):
     description: str | None = Field(default=None, min_length=1)
     category: ReportCategory | None = None
     status: ReportStatus | None = None
-    latitude: float | None = None
-    longitude: float | None = None
+    latitude: float | None = Field(default=None, ge=-90.0, le=90.0)
+    longitude: float | None = Field(default=None, ge=-180.0, le=180.0)
     address: str | None = Field(default=None, max_length=500)
     media_urls: list[str] | None = None
+
+    @model_validator(mode="after")
+    def validate_location(self) -> "UpdateReportRequest":
+        if (self.latitude is not None and self.longitude is None) or (self.latitude is None and self.longitude is not None):
+            raise ValueError("Both latitude and longitude must be provided together, or neither")
+        return self
 
 
 class ReportResponse(BaseModel):

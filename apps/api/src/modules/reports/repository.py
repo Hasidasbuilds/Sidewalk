@@ -23,3 +23,16 @@ async def list_reports(db: AsyncSession, skip: int = 0, limit: int = 50) -> list
     stmt = select(Report).where(Report.is_deleted.is_(False)).order_by(Report.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return list(result.scalars().all())
+
+
+async def update_report(db: AsyncSession, report: Report, **fields: Any) -> Report:
+    for key, value in fields.items():
+        setattr(report, key, value)
+    await db.flush()
+    await db.refresh(report)
+    return report
+
+
+async def soft_delete_report(db: AsyncSession, report: Report) -> None:
+    report.is_deleted = True
+    await db.flush()
