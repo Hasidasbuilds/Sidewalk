@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from src.core.database import get_db
 from src.core.models import Base
 from src.main import create_app
+import src.modules.auth.models  # noqa: F401
+import src.modules.reports.models  # noqa: F401
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 

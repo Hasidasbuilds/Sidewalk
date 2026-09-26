@@ -25,3 +25,43 @@ async def test_get_profile_authenticated(client: AsyncClient):
 async def test_get_profile_unauthenticated_returns_401(client: AsyncClient):
     response = await client.get("/api/users/me")
     assert response.status_code == 401
+
+
+async def test_update_email_success(client: AsyncClient):
+    token, user = await register_and_login(client, "update_test@example.com")
+    res = await client.patch(
+        "/api/users/me",
+        json={"email": "updated@example.com"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["email"] == "updated@example.com"
+    assert data["id"] == user["id"]
+
+
+async def test_update_email_duplicate_conflict(client: AsyncClient):
+    await client.post("/api/auth/register", json={"email": "existing@example.com", "password": "testpassword123"})
+    token, _ = await register_and_login(client, "updater@example.com")
+    res = await client.patch(
+        "/api/users/me",
+        json={"email": "existing@example.com"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert res.status_code == 409
+    assert res.json().get("field") == "email"
+
+
+async def test_update_empty_payload_returns_422(client: AsyncClient):
+    token, _ = await register_and_login(client, "empty_payload@example.com")
+    res = await client.patch(
+        "/api/users/me",
+        json={},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert res.status_code == 422
+
+
+async def test_update_unauthenticated_returns_401(client: AsyncClient):
+    res = await client.patch("/api/users/me", json={"email": "fail@example.com"})
+    assert res.status_code == 401
