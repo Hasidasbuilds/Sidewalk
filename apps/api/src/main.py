@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+import src.models  # noqa: F401
 from src.core.config import get_settings
 from src.core.error_handler import app_error_handler, validation_error_handler
 from src.core.exceptions import AppError
