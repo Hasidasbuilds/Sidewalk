@@ -1,8 +1,11 @@
 import uuid
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.core.enums import CaseStatus
 from src.core.exceptions import NotFoundError
+from src.core.pagination import PageParams, PaginatedResponse
 from src.modules.cases.models import Case, CaseFollow
+from src.modules.cases.schemas import CaseResponse
 
 
 async def get_case_by_id(db: AsyncSession, case_id: uuid.UUID) -> Case:
@@ -12,6 +15,40 @@ async def get_case_by_id(db: AsyncSession, case_id: uuid.UUID) -> Case:
     if not case:
         raise NotFoundError("Case not found")
     return case
+
+
+async def list_cases(
+    db: AsyncSession,
+    params: PageParams,
+    status: CaseStatus | None = None,
+) -> PaginatedResponse[CaseResponse]:
+    query = select(Case)
+    count_query = select(func.count()).select_from(Case)
+
+    if status:
+        status_val = status.value if hasattr(status, "value") else str(status)
+        if status_val in ("open", "opened"):
+            query = query.where(Case.status.in_(["open", "opened"]))
+            count_query = count_query.where(Case.status.in_(["open", "opened"]))
+        else:
+            query = query.where(Case.status == status_val)
+            count_query = count_query.where(Case.status == status_val)
+
+    total_res = await db.execute(count_query)
+    total = total_res.scalar() or 0
+
+    query = query.order_by(Case.created_at.desc()).offset(params.offset).limit(params.limit)
+    result = await db.execute(query)
+    cases = list(result.scalars().all())
+
+    items = [CaseResponse.model_validate(c) for c in cases]
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        limit=params.limit,
+        offset=params.offset,
+        has_more=(params.offset + len(items)) < total,
+    )
 
 
 async def follow_case(db: AsyncSession, case_id: uuid.UUID, user_id: uuid.UUID) -> None:

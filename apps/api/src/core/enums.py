@@ -48,6 +48,7 @@ class ReportCategory(str, enum.Enum):
 
 class CaseStatus(str, enum.Enum):
     opened = "opened"
+    open = "open"
     in_review = "in_review"
     action_scheduled = "action_scheduled"
     in_progress = "in_progress"
@@ -57,6 +58,7 @@ class CaseStatus(str, enum.Enum):
 
 CASE_STATUS_TRANSITIONS: dict[CaseStatus, list[CaseStatus]] = {
     CaseStatus.opened: [CaseStatus.in_review, CaseStatus.closed],
+    CaseStatus.open: [CaseStatus.in_review, CaseStatus.closed],
     CaseStatus.in_review: [
         CaseStatus.action_scheduled,
         CaseStatus.in_progress,
