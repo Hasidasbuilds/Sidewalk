@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Query
+import uuid
+from fastapi import APIRouter, Query, Response, status
 from src.core.database import DBSession
 from src.modules.auth.dependencies import CurrentUser
-from src.modules.reports.schemas import CreateReportRequest, ReportResponse
+from src.modules.reports.schemas import CreateReportRequest, ReportResponse, UpdateReportRequest
 from src.modules.reports import service as report_service
 
 router = APIRouter(prefix="/reports", tags=["reports"])
@@ -21,3 +22,26 @@ async def list_reports(
     limit: int = Query(50, ge=1, le=100),
 ) -> list[ReportResponse]:
     return await report_service.list_reports(db, skip=skip, limit=limit)
+
+
+@router.get("/{report_id}", response_model=ReportResponse)
+async def get_report(report_id: uuid.UUID, db: DBSession) -> ReportResponse:
+    return await report_service.get_report(db, report_id)
+
+
+@router.patch("/{report_id}", response_model=ReportResponse)
+async def update_report(
+    report_id: uuid.UUID,
+    payload: UpdateReportRequest,
+    current_user: CurrentUser,
+    db: DBSession,
+) -> ReportResponse:
+    return await report_service.update_report(db, report_id, current_user.id, payload)
+
+
+@router.delete("/{report_id}", status_code=204)
+async def delete_report(
+    report_id: uuid.UUID, current_user: CurrentUser, db: DBSession
+) -> Response:
+    await report_service.delete_report(db, report_id, current_user.id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
