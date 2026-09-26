@@ -19,8 +19,22 @@ async def get_report_by_id(db: AsyncSession, report_id: uuid.UUID) -> Report | N
     return result.scalar_one_or_none()
 
 
-async def list_reports(db: AsyncSession, skip: int = 0, limit: int = 50) -> list[Report]:
-    stmt = select(Report).where(Report.is_deleted.is_(False)).order_by(Report.created_at.desc()).offset(skip).limit(limit)
+async def list_reports(
+    db: AsyncSession,
+    skip: int = 0,
+    limit: int = 50,
+    category: str | None = None,
+    status: str | None = None,
+    user_id: uuid.UUID | None = None,
+) -> list[Report]:
+    stmt = select(Report).where(Report.is_deleted.is_(False))
+    if category is not None:
+        stmt = stmt.where(Report.category == category)
+    if status is not None:
+        stmt = stmt.where(Report.status == status)
+    if user_id is not None:
+        stmt = stmt.where(Report.user_id == user_id)
+    stmt = stmt.order_by(Report.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return list(result.scalars().all())
 

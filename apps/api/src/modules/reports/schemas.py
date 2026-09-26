@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 from src.core.enums import ReportCategory, ReportStatus
 
 
@@ -11,7 +11,15 @@ class CreateReportRequest(BaseModel):
     latitude: float | None = Field(default=None, ge=-90.0, le=90.0)
     longitude: float | None = Field(default=None, ge=-180.0, le=180.0)
     address: str | None = Field(default=None, max_length=500)
-    media_urls: list[str] = Field(default_factory=list)
+    media_urls: list[str] = Field(default_factory=list, max_length=10)
+
+    @field_validator("media_urls")
+    @classmethod
+    def validate_media_urls(cls, urls: list[str]) -> list[str]:
+        for url in urls:
+            if not (url.startswith("http://") or url.startswith("https://")):
+                raise ValueError(f"Invalid media URL: {url}")
+        return urls
 
     @model_validator(mode="after")
     def validate_location(self) -> "CreateReportRequest":
@@ -28,7 +36,16 @@ class UpdateReportRequest(BaseModel):
     latitude: float | None = Field(default=None, ge=-90.0, le=90.0)
     longitude: float | None = Field(default=None, ge=-180.0, le=180.0)
     address: str | None = Field(default=None, max_length=500)
-    media_urls: list[str] | None = None
+    media_urls: list[str] | None = Field(default=None, max_length=10)
+
+    @field_validator("media_urls")
+    @classmethod
+    def validate_media_urls(cls, urls: list[str] | None) -> list[str] | None:
+        if urls is not None:
+            for url in urls:
+                if not (url.startswith("http://") or url.startswith("https://")):
+                    raise ValueError(f"Invalid media URL: {url}")
+        return urls
 
     @model_validator(mode="after")
     def validate_location(self) -> "UpdateReportRequest":
