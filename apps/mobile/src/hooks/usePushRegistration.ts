@@ -1,0 +1,1 @@
+export function usePushRegistration() {\n  return { isRegistered: false };\n}\n

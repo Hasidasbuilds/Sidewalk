@@ -1,0 +1,1 @@
+export function PushRegistrationPrompt() {\n  return null;\n}\n
